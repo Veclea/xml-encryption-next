@@ -1,6 +1,7 @@
 // test/encrypt.test.js
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { spy } from 'sinon';
+// @ts-ignore
 import { encrypt, decrypt, encryptKeyInfo, decryptKeyInfo } from '/lib/index.js';
 import fs from 'node:fs';
 
@@ -12,6 +13,7 @@ describe('encrypt', function() {
     });
 
     afterEach(function() {
+        // @ts-ignore
         consoleSpy.restore();
     });
 
@@ -131,6 +133,7 @@ describe('encrypt', function() {
                 expect(err).toBeTruthy();
                 expect(result).toBeFalsy();
                 //should not pop up warns due to options.warnInsecureAlgorithm = false;
+                // @ts-ignore
                 expect(consoleSpy.called).toBe(false);
              
             });
@@ -206,7 +209,9 @@ describe('encrypt', function() {
         var plaintext = 'The quick brown fox jumps over the lazy dog';
 
         encryptKeyInfo(plaintext, options, function(err, encryptedKeyInfo) {
-            if (err) return done(err);
+            if (err) { // @ts-ignore
+                return done(err);
+            }
 
             var decryptedKeyInfo = decryptKeyInfo(
                 encryptedKeyInfo,
@@ -260,8 +265,11 @@ describe('encrypt', function() {
         var plaintext = 'The quick brown fox jumps over the lazy dog';
 
         encryptKeyInfo(plaintext, options, function(err, encryptedKeyInfo) {
-            if (err) return done(err);
-            expect(consoleSpy.called).toBe(true);
+            if (err) { // @ts-ignore
+                return done(err);
+            }
+            // @ts-ignore
+            expect(consoleSpy?.called).toBe(true);
             expect(() => {
                 decryptKeyInfo(
                     encryptedKeyInfo,

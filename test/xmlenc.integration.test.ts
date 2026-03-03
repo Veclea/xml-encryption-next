@@ -1,11 +1,11 @@
 // test/integration.test.js
-import {describe, it, expect} from 'vitest';
+
 import {decrypt} from '../lib/index.js';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import {DOMParser} from '@xmldom/xmldom';
 import xpath from 'xpath';
-
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 describe('integration', function () {
 
     it('should decrypt assertion with aes128', function (done) {
@@ -20,8 +20,8 @@ describe('integration', function () {
         });
     });
 
-    /*    it('should decrypt Okta assertion', function (done) {
-            var encryptedContent = fs.readFileSync('./test/test-okta-enc-response.xml').toString()
+        it('should decrypt Okta assertion', function (done) {
+            let encryptedContent = fs.readFileSync('./test/test-okta-enc-response.xml').toString()
             decrypt(
                 encryptedContent,
                 {key: fs.readFileSync('./test/test-okta.pem', )},
@@ -31,5 +31,5 @@ describe('integration', function () {
 
                 }
             );
-        });*/
+        });
 });
