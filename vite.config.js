@@ -9,6 +9,7 @@ export default defineConfig({
             entry: resolve(__dirname, 'lib/index.js'), // 入口文件
             name: 'SamlXmlEnc', // 全局变量名（如果是 UMD/IIFE，CJS/ES 忽略此项）
             formats: ['es'], // 输出 ES Module 和 CommonJS
+            fileName: (format, entryName) => `${entryName}.js`,
         },
         rolldownOptions: {
             // 关键：排除 Node 内置模块和第三方依赖
@@ -29,6 +30,13 @@ export default defineConfig({
 
                 // 如果需要生成 sourcemap 方便调试
                 sourcemap: true,
+                // 关键配置：保留模块结构
+                preserveModules: true,
+                // 将结构保留在 dist/es 目录下
+                dir: 'dist',
+                // 输出为 es 模块
+                format: 'es',
+                entryFileNames: '[name].js'
             },
         },
         // 优化依赖预构建（主要用于 dev 模式，build 模式影响较小但保留无妨）
