@@ -1,4 +1,3 @@
-/*
 // test/encrypt.test.js
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { spy } from 'sinon';
@@ -273,4 +272,4 @@ describe('encrypt', function() {
          
         });
     });
-});*/
+});
