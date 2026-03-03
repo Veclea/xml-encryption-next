@@ -7,8 +7,13 @@
     "mocha": "11.7.5",
     "sinon": "^21.0.1"
   },
-  "main": "./lib/index.js",
+
+  "main": "./dist/saml-lib.cjs.js",
   "repository": "https://github.com/auth0/node-xml-encryption",
+  "peerDependencies": {
+    "node-forge": "^1.3.1"
+  },
+
   "keywords": [
     "xml",
     "encryption",
@@ -26,15 +31,18 @@
     "@xmldom/xmldom": "^0.8.5",
     "escape-html": "^1.0.3",
     "jsdom": "^28.1.0",
+    "node-forge": "^1.3.3",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.0.18",
-    "xpath": "0.0.32"
+    "xpath": "0.0.32",
+    "vite": "8.0.0-beta.16"
   },
   "files": [
     "lib",
     "package-lock.json"
   ],
   "scripts": {
-    "test": "vitest"
+    "test": "vitest",
+    "build": "vite build"
   }
 }
