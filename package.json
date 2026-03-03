@@ -1,6 +1,6 @@
 {
-  "name": "xml-encryption",
-  "version": "3.1.0",
+  "name": "xml-encryption-next",
+  "version": "4.0.0",
   "type": "module",
   "devDependencies": {
     "mocha": "^7.1.2",
