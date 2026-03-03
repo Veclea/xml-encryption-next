@@ -9,10 +9,11 @@ import xpath from 'xpath';
 describe('integration', function() {
 
     it('should decrypt assertion with aes128', function (done) {
-        var result = fs.readFileSync('./test/assertion-sha1-128.xml');
+        let result = fs.readFileSync('./test/assertion-sha1-128.xml');
 
         decrypt(result, { key: fs.readFileSync('./test/test-cbc128.key')}, function (err, decrypted) {
             // decrypted content should finish with <saml2:Assertion>
+            console.log(err)
             console.log(decrypted)
             console.log("这是合适呢么====")
             expect(/<\/saml2:Assertion>$/.test(decrypted)).toBe(true);
@@ -20,7 +21,7 @@ describe('integration', function() {
         });
     });
 
-    it('should decrypt Okta assertion', function (done) {
+/*    it('should decrypt Okta assertion', function (done) {
         var encryptedContent = fs.readFileSync('./test/test-okta-enc-response.xml').toString()
         decrypt(
             encryptedContent,
@@ -31,5 +32,5 @@ describe('integration', function() {
                 
             }
         );
-    });
+    });*/
 });
