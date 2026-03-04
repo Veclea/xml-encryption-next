@@ -26,7 +26,7 @@ export default defineConfig({
                 preserveDynamicImports: true,
 
                 // 对于 CJS 格式，确保互操作性
-                interop: 'auto',
+                interop: false,
 
                 // 如果需要生成 sourcemap 方便调试
                 sourcemap: true,
