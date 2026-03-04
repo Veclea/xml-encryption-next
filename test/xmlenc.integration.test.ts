@@ -20,7 +20,7 @@ describe('integration', function () {
         });
     });
 
-  /*      it('should decrypt Okta assertion', function (done) {
+        it('should decrypt Okta assertion', function (done) {
             let encryptedContent = fs.readFileSync('./test/test-okta-enc-response.xml').toString()
             decrypt(
                 encryptedContent,
@@ -31,5 +31,5 @@ describe('integration', function () {
 
                 }
             );
-        });*/
+        });
 });

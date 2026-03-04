@@ -4,6 +4,7 @@ console.log(__dirname)
 export default defineConfig({
     // 明确指定构建目标为 Node，因为涉及 crypto 和 fs 等
     build: {
+        minify:false,
         target: 'node18', // 或更高，取决于您的最低支持版本
         minify:false,
         lib: {
