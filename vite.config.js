@@ -5,7 +5,6 @@ export default defineConfig({
     // 明确指定构建目标为 Node，因为涉及 crypto 和 fs 等
     build: {
         minify:false,
-        target: 'node18', // 或更高，取决于您的最低支持版本
         lib: {
             entry: resolve(__dirname, 'lib/index.js'), // 入口文件
             name: 'SamlXmlEnc', // 全局变量名（如果是 UMD/IIFE，CJS/ES 忽略此项）
@@ -27,7 +26,7 @@ export default defineConfig({
                 preserveDynamicImports: true,
 
                 // 对于 CJS 格式，确保互操作性
-                interop: 'auto',
+                interop: false,
 
                 // 如果需要生成 sourcemap 方便调试
                 sourcemap: true,
