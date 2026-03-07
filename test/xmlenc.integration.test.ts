@@ -12,9 +12,6 @@ describe('integration', function () {
         let result = fs.readFileSync('./test/assertion-sha1-128.xml').toString();
         decrypt(result, {key: fs.readFileSync('./test/test-cbc128.key')}, function (err, decrypted) {
             // decrypted content should finish with <saml2:Assertion>
-            console.log(err)
-            console.log(decrypted)
-            console.log("这是合适呢么====")
             expect(/<\/saml2:Assertion>$/.test(decrypted)).toBe(true);
 
         });
@@ -26,6 +23,9 @@ describe('integration', function () {
                 encryptedContent,
                 {key: fs.readFileSync('./test/test-okta.pem', )},
                 (err, res) => {
+                    console.log(err)
+                    console.log("看下错误===========================")
+
                     expect(err).toBeFalsy();
 
 
