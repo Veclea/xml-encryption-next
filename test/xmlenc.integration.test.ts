@@ -23,11 +23,7 @@ describe('integration', function () {
                 encryptedContent,
                 {key: fs.readFileSync('./test/test-okta.pem', )},
                 (err, res) => {
-                    console.log(err)
-                    console.log("看下错误===========================")
-
                     expect(err).toBeFalsy();
-
 
                 }
             );

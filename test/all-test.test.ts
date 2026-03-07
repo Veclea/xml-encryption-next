@@ -47,7 +47,7 @@ describe('XML Encryption/Decryption Test Suite', () => {
 
             encrypt(testContent, options, (encryptErr, encryptedXml) => {
                 if (encryptErr) {
-                console.log(encryptErr)
+                    console.log(encryptErr)
                     return;
                 }
 
@@ -61,7 +61,7 @@ describe('XML Encryption/Decryption Test Suite', () => {
                     }
 
 
-                  
+
                 });
             });
         });
@@ -95,7 +95,8 @@ describe('XML Encryption/Decryption Test Suite', () => {
                         }
 
                         expect(decryptedContent).toBe(testContent);
-                      
+
+
                     });
                 });
             });
@@ -114,7 +115,8 @@ describe('XML Encryption/Decryption Test Suite', () => {
 
             encrypt(testContent, options, (encryptErr) => {
                 expect(encryptErr).toBeDefined();
-              
+
+
             });
         });
     });
@@ -151,7 +153,8 @@ describe('XML Encryption/Decryption Test Suite', () => {
                             }
 
                             expect(decryptedContent).toBe(testContent);
-                          
+
+
                         });
                     });
                 });
@@ -172,7 +175,8 @@ describe('XML Encryption/Decryption Test Suite', () => {
 
             encrypt(testContent, options, (encryptErr) => {
                 expect(encryptErr).toBeDefined();
-              
+
+
             });
         });
 
@@ -189,7 +193,8 @@ describe('XML Encryption/Decryption Test Suite', () => {
 
             encrypt(testContent, options, (encryptErr) => {
                 expect(encryptErr).toBeDefined();
-              
+
+
             });
         });
     });
@@ -248,7 +253,8 @@ describe('XML Encryption/Decryption Test Suite', () => {
                             }
 
                             expect(decryptedContent).toBe(testContent);
-                          
+
+
                         });
                     });
                 });
@@ -262,7 +268,8 @@ describe('XML Encryption/Decryption Test Suite', () => {
             encrypt(testContent, undefined, (err) => {
                 expect(err).toBeDefined();
                 expect(err.message).toContain('must provide options');
-              
+
+
             });
         });
 
@@ -277,7 +284,8 @@ describe('XML Encryption/Decryption Test Suite', () => {
             encrypt(null, options, (err) => {
                 expect(err).toBeDefined();
                 expect(err.message).toContain('must provide content to encrypt');
-              
+
+
             });
         });
 
@@ -291,7 +299,8 @@ describe('XML Encryption/Decryption Test Suite', () => {
             encrypt(testContent, options, (err) => {
                 expect(err).toBeDefined();
                 expect(err.message).toContain('rsa_pub option is mandatory');
-              
+
+
             });
         });
 
@@ -305,7 +314,8 @@ describe('XML Encryption/Decryption Test Suite', () => {
             encrypt(testContent, options, (err) => {
                 expect(err).toBeDefined();
                 expect(err.message).toContain('pem option is mandatory');
-              
+
+
             });
         });
 
@@ -330,7 +340,8 @@ describe('XML Encryption/Decryption Test Suite', () => {
                 decrypt(encryptedXml, decryptOptions, (err) => {
                     expect(err).toBeDefined();
                     expect(err.message).toContain('key option is mandatory');
-                  
+
+
                 });
             });
         });
@@ -347,7 +358,8 @@ describe('XML Encryption/Decryption Test Suite', () => {
             encrypt(testContent, options, (err) => {
                 expect(err).toBeDefined();
                 expect(err.message).toContain('unsupported encryption algorithm');
-              
+
+
             });
         });
 
@@ -363,7 +375,8 @@ describe('XML Encryption/Decryption Test Suite', () => {
             encrypt(testContent, options, (err) => {
                 expect(err).toBeDefined();
                 expect(err.message).toContain('encryption key algorithm not supported');
-              
+
+
             });
         });
     });
@@ -394,7 +407,8 @@ describe('XML Encryption/Decryption Test Suite', () => {
                     }
 
                     expect(decryptedContent).toBe(testContent);
-                  
+
+
                 });
             });
         });
@@ -412,8 +426,337 @@ describe('XML Encryption/Decryption Test Suite', () => {
             encrypt(testContent, options, (err) => {
                 expect(err).toBeDefined();
                 expect(err.message).toContain('is not secure');
-              
+
+
+            });
+        });
+    });
+
+    // 新增测试：禁用不安全哈希算法的测试
+    describe('Insecure Hash Algorithm Tests', () => {
+        it('should allow SHA-1 when disallowInsecureHash is false', (done) => {
+            const options = {
+                rsa_pub: testKeys.publicKey,
+                pem: testKeys.certificate,
+                keyEncryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p',
+                keyEncryptionDigest: 'sha1',
+                encryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#aes128-cbc',
+                disallowInsecureHash: false,
+                key: testKeys.privateKey
+            };
+
+            encrypt(testContent, options, (encryptErr, encryptedXml) => {
+                if (encryptErr) {
+                    console.log(encryptErr);
+                    return;
+                }
+
+                decrypt(encryptedXml, options, (decryptErr, decryptedContent) => {
+                    if (decryptErr) {
+                        console.log(decryptErr);
+                        return;
+                    }
+
+                    expect(decryptedContent).toBe(testContent);
+
+                });
+            });
+        });
+
+        it('should reject SHA-1 when disallowInsecureHash is true', (done) => {
+            const options = {
+                rsa_pub: testKeys.publicKey,
+                pem: testKeys.certificate,
+                keyEncryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p',
+                keyEncryptionDigest: 'sha1',
+                encryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#aes128-cbc',
+                disallowInsecureHash: true,
+                key: testKeys.privateKey
+            };
+
+            encrypt(testContent, options, (err) => {
+                expect(err).toBeDefined();
+                expect(err.message).toContain('SHA-1 hash algorithm is not secure and has been disabled');
+
+            });
+        });
+
+        it('should allow SHA-256 when disallowInsecureHash is true', (done) => {
+            const options = {
+                rsa_pub: testKeys.publicKey,
+                pem: testKeys.certificate,
+                keyEncryptionAlgorithm: 'http://www.w3.org/2009/xmlenc11#rsa-oaep',
+                keyEncryptionDigest: 'sha256',
+                keyEncryptionMgf1: 'sha256',
+                encryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#aes128-cbc',
+                disallowInsecureHash: true,
+                key: testKeys.privateKey
+            };
+
+            encrypt(testContent, options, (encryptErr, encryptedXml) => {
+                if (encryptErr) {
+                    console.log(encryptErr);
+                    return;
+                }
+
+                decrypt(encryptedXml, options, (decryptErr, decryptedContent) => {
+                    if (decryptErr) {
+                        console.log(decryptErr);
+                        return;
+                    }
+
+                    expect(decryptedContent).toBe(testContent);
+
+                });
+            });
+        });
+
+        it('should reject SHA-1 in decrypt when disallowInsecureHash is true', (done) => {
+            const options = {
+                rsa_pub: testKeys.publicKey,
+                pem: testKeys.certificate,
+                keyEncryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p',
+                keyEncryptionDigest: 'sha1',
+                encryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#aes128-cbc',
+                disallowInsecureHash: false, // Allow during encryption
+                key: testKeys.privateKey
+            };
+
+            // First encrypt with SHA-1 allowed
+            encrypt(testContent, options, (encryptErr, encryptedXml) => {
+                if (encryptErr) {
+                    console.log(encryptErr);
+                    return;
+                }
+
+                // Then try to decrypt with SHA-1 disallowed
+                const decryptOptions = {
+                    ...options,
+                    disallowInsecureHash: true
+                };
+
+                decrypt(encryptedXml, decryptOptions, (err) => {
+                    expect(err).toBeDefined();
+                    expect(err.message).toContain('SHA-1 hash algorithm is not secure and has been disabled');
+
+                });
+            });
+        });
+    });
+
+    // 新增测试：禁用不安全加密算法的测试
+    describe('Insecure Encryption Algorithm Tests', () => {
+        it('should allow AES-CBC when disallowInsecureEncryption is false', (done) => {
+            const options = {
+                rsa_pub: testKeys.publicKey,
+                pem: testKeys.certificate,
+                keyEncryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#rsa-1_5',
+                encryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#aes128-cbc',
+                disallowInsecureEncryption: false,
+                key: testKeys.privateKey
+            };
+
+            encrypt(testContent, options, (encryptErr, encryptedXml) => {
+                if (encryptErr) {
+                    console.log(encryptErr);
+                    return;
+                }
+
+                decrypt(encryptedXml, options, (decryptErr, decryptedContent) => {
+                    if (decryptErr) {
+                        console.log(decryptErr);
+                        return;
+                    }
+
+                    expect(decryptedContent).toBe(testContent);
+
+                });
+            });
+        });
+
+        it('should reject AES-CBC when disallowInsecureEncryption is true', (done) => {
+            const options = {
+                rsa_pub: testKeys.publicKey,
+                pem: testKeys.certificate,
+                keyEncryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#rsa-1_5',
+                encryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#aes128-cbc',
+                disallowInsecureEncryption: true,
+                key: testKeys.privateKey
+            };
+
+            encrypt(testContent, options, (err) => {
+                expect(err).toBeDefined();
+                expect(err.message).toContain('AES-CBC encryption algorithm is not secure and has been disabled');
+
+            });
+        });
+
+        it('should allow AES-GCM when disallowInsecureEncryption is true', (done) => {
+            const options = {
+                rsa_pub: testKeys.publicKey,
+                pem: testKeys.certificate,
+                keyEncryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#rsa-1_5',
+                encryptionAlgorithm: 'http://www.w3.org/2009/xmlenc11#aes128-gcm',
+                disallowInsecureEncryption: true,
+                key: testKeys.privateKey
+            };
+
+            encrypt(testContent, options, (encryptErr, encryptedXml) => {
+                if (encryptErr) {
+                    console.log(encryptErr);
+                    return;
+                }
+
+                decrypt(encryptedXml, options, (decryptErr, decryptedContent) => {
+                    if (decryptErr) {
+                        console.log(decryptErr);
+                        return;
+                    }
+
+                    expect(decryptedContent).toBe(testContent);
+
+                });
+            });
+        });
+
+        it('should reject AES-CBC in decrypt when disallowInsecureEncryption is true', (done) => {
+            const options = {
+                rsa_pub: testKeys.publicKey,
+                pem: testKeys.certificate,
+                keyEncryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#rsa-1_5',
+                encryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#aes128-cbc',
+                disallowInsecureEncryption: false, // Allow during encryption
+                key: testKeys.privateKey
+            };
+
+            // First encrypt with AES-CBC allowed
+            encrypt(testContent, options, (encryptErr, encryptedXml) => {
+                if (encryptErr) {
+                    console.log(encryptErr);
+                    return;
+                }
+
+                // Then try to decrypt with AES-CBC disallowed
+                const decryptOptions = {
+                    ...options,
+                    disallowInsecureEncryption: true
+                };
+
+                decrypt(encryptedXml, decryptOptions, (err) => {
+                    expect(err).toBeDefined();
+                    expect(err.message).toContain('AES-CBC encryption algorithm is not secure and has been disabled');
+
+                });
+            });
+        });
+    });
+
+    // 新增测试：组合不安全算法配置的测试
+    describe('Combined Insecure Algorithm Configuration Tests', () => {
+        it('should reject both insecure hash and encryption when both flags are true', (done) => {
+            const options = {
+                rsa_pub: testKeys.publicKey,
+                pem: testKeys.certificate,
+                keyEncryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p',
+                keyEncryptionDigest: 'sha1',
+                encryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#aes128-cbc',
+                disallowInsecureHash: true,
+                disallowInsecureEncryption: true,
+                key: testKeys.privateKey
+            };
+
+            encrypt(testContent, options, (err) => {
+                expect(err).toBeDefined();
+                expect(err.message).toContain('is not secure');
+
+            });
+        });
+
+        it('should allow both secure hash and encryption when both flags are true', (done) => {
+            const options = {
+                rsa_pub: testKeys.publicKey,
+                pem: testKeys.certificate,
+                keyEncryptionAlgorithm: 'http://www.w3.org/2009/xmlenc11#rsa-oaep',
+                keyEncryptionDigest: 'sha256',
+                keyEncryptionMgf1: 'sha256',
+                encryptionAlgorithm: 'http://www.w3.org/2009/xmlenc11#aes128-gcm',
+                disallowInsecureHash: true,
+                disallowInsecureEncryption: true,
+                key: testKeys.privateKey
+            };
+
+            encrypt(testContent, options, (encryptErr, encryptedXml) => {
+                if (encryptErr) {
+                    console.log(encryptErr);
+                    return;
+                }
+
+                decrypt(encryptedXml, options, (decryptErr, decryptedContent) => {
+                    if (decryptErr) {
+                        console.log(decryptErr);
+                        return;
+                    }
+
+                    expect(decryptedContent).toBe(testContent);
+
+                });
+            });
+        });
+
+        it('should reject insecure key encryption when disallowDecryptionWithInsecureAlgorithm is true', (done) => {
+            const options = {
+                rsa_pub: testKeys.publicKey,
+                pem: testKeys.certificate,
+                keyEncryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#rsa-1_5',
+                encryptionAlgorithm: 'http://www.w3.org/2009/xmlenc11#aes128-gcm',
+                disallowDecryptionWithInsecureAlgorithm: true,
+                key: testKeys.privateKey
+            };
+
+            // Encrypt with insecure key algorithm but secure content algorithm
+            encrypt(testContent, options, (encryptErr, encryptedXml) => {
+                if (encryptErr) {
+                    console.log(encryptErr);
+                    return;
+                }
+
+                // This should fail during decryption because key algorithm is insecure
+                decrypt(encryptedXml, options, (err) => {
+                    expect(err).toBeDefined();
+                    expect(err.message).toContain('is not secure, fail to decrypt');
+
+                });
+            });
+        });
+
+        it('should reject insecure content encryption when disallowDecryptionWithInsecureAlgorithm is true', (done) => {
+            const options = {
+                rsa_pub: testKeys.publicKey,
+                pem: testKeys.certificate,
+                keyEncryptionAlgorithm: 'http://www.w3.org/2009/xmlenc11#rsa-oaep',
+                keyEncryptionDigest: 'sha256',
+                keyEncryptionMgf1: 'sha256',
+                encryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#tripledes-cbc',
+                disallowDecryptionWithInsecureAlgorithm: true,
+                key: testKeys.privateKey
+            };
+
+            // Encrypt with secure key algorithm but insecure content algorithm
+            encrypt(testContent, options, (encryptErr, encryptedXml) => {
+                if (encryptErr) {
+                    console.log(encryptErr);
+                    return;
+                }
+
+                // This should fail during decryption because content algorithm is insecure
+                decrypt(encryptedXml, options, (err) => {
+                    expect(err).toBeDefined();
+                    expect(err.message).toContain('is not secure, fail to decrypt');
+
+                });
             });
         });
     });
 });
+
+
