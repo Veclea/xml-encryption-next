@@ -1,6 +1,6 @@
 {
   "name": "xml-encryption-next",
-  "version": "4.6.0",
+  "version": "5.0.0",
   "type": "module",
   "devDependencies": {
     "@types/node": "^25.3.3",
