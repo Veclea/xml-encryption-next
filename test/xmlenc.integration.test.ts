@@ -59,17 +59,11 @@ describe('Integration Tests', () => {
         return new Promise((resolve, reject) => {
             decrypt(encryptedContent, { key }, (err, res) => {
                 if (err) {
-                    // 如果是密钥长度错误，跳过测试
-                    if (err.message.includes('Invalid key length')) {
-                        console.log('Skipping test: invalid key length for this test case');
-                        expect(true).toBe(true);
-                        resolve();
-                        return;
-                    }
                     reject(err);
                     return;
                 }
                 expect(res).toBeDefined();
+                expect(res.toString('utf8')).toContain('<saml2:Assertion');
                 resolve();
             });
         });

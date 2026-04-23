@@ -1,6 +1,8 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { encrypt, decrypt } from '../lib/index.js';
 import forge from 'node-forge';
+import { DOMParser } from '@xmldom/xmldom';
+import xpath from 'xpath';
 
 // ============================================================================
 // 测试工具函数
@@ -43,6 +45,7 @@ const testKeys = generateTestKeys();
 const TEST_CONTENT = 'This is a test content for XML encryption';
 const TEST_CONTENT_UNICODE = '测试中文内容 🚀 特殊字符：@#$%^&*()';
 const TEST_CONTENT_LARGE = 'A'.repeat(10000) + '测试大数据' + 'B'.repeat(10000);
+const TEST_OAEP_PARAMS = '9lWu3Q==';
 
 // ============================================================================
 // RSA 1.5 加密算法测试 (XML Encryption 1.0)
@@ -134,17 +137,34 @@ describe('RSA-OAEP-MGF1P Encryption Algorithm Tests (XML Enc 1.0)', () => {
         });
     });
 
-    it('should use default sha256 digest when not specified', async () => {
+    it('should use the XML Encryption default SHA-1 digest when not specified', async () => {
         const options = {
             ...baseOptions,
             encryptionAlgorithm: 'http://www.w3.org/2009/xmlenc11#aes128-gcm'
-            // keyEncryptionDigest 不指定，默认 sha256
+            // keyEncryptionDigest 不指定，默认 sha1
         };
 
         const encryptedXml = await runEncrypt(TEST_CONTENT, options);
         const decryptedContent = await runDecrypt(encryptedXml, options);
         
         expect(decryptedContent).toBe(TEST_CONTENT);
+        expect(encryptedXml).toContain('http://www.w3.org/2000/09/xmldsig#sha1');
+        expect(encryptedXml).not.toContain('http://www.w3.org/2009/xmlenc11#mgf1');
+    });
+
+    it('should support OAEPparams with rsa-oaep-mgf1p', async () => {
+        const options = {
+            ...baseOptions,
+            keyEncryptionDigest: 'sha1',
+            keyEncryptionOAEPParams: TEST_OAEP_PARAMS,
+            encryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#aes128-cbc'
+        };
+
+        const encryptedXml = await runEncrypt(TEST_CONTENT, options);
+        const decryptedContent = await runDecrypt(encryptedXml, options);
+
+        expect(decryptedContent).toBe(TEST_CONTENT);
+        expect(encryptedXml).toContain(`<e:OAEPparams>${TEST_OAEP_PARAMS}</e:OAEPparams>`);
     });
 
     it('should fail with unsupported hash algorithm', async () => {
@@ -192,7 +212,7 @@ describe('RSA-OAEP Encryption Algorithm Tests (XML Enc 1.1)', () => {
         });
     });
 
-    it('should use default sha256 for both OAEP and MGF1 when not specified', async () => {
+    it('should use the XML Encryption SHA-1 defaults for both OAEP and MGF1 when not specified', async () => {
         const options = {
             ...baseOptions,
             encryptionAlgorithm: 'http://www.w3.org/2009/xmlenc11#aes256-gcm'
@@ -202,6 +222,25 @@ describe('RSA-OAEP Encryption Algorithm Tests (XML Enc 1.1)', () => {
         const decryptedContent = await runDecrypt(encryptedXml, options);
         
         expect(decryptedContent).toBe(TEST_CONTENT);
+        expect(encryptedXml).not.toContain('<ds:DigestMethod');
+        expect(encryptedXml).not.toContain('<xenc11:MGF');
+    });
+
+    it('should support OAEPparams and MGF1-SHA224 with rsa-oaep', async () => {
+        const options = {
+            ...baseOptions,
+            keyEncryptionDigest: 'sha256',
+            keyEncryptionMgf1: 'sha224',
+            keyEncryptionOAEPParams: TEST_OAEP_PARAMS,
+            encryptionAlgorithm: 'http://www.w3.org/2009/xmlenc11#aes128-gcm'
+        };
+
+        const encryptedXml = await runEncrypt(TEST_CONTENT, options);
+        const decryptedContent = await runDecrypt(encryptedXml, options);
+
+        expect(decryptedContent).toBe(TEST_CONTENT);
+        expect(encryptedXml).toContain(`<e:OAEPparams>${TEST_OAEP_PARAMS}</e:OAEPparams>`);
+        expect(encryptedXml).toContain('http://www.w3.org/2009/xmlenc11#mgf1sha224');
     });
 
     it('should fail with unsupported OAEP hash', async () => {
@@ -219,7 +258,7 @@ describe('RSA-OAEP Encryption Algorithm Tests (XML Enc 1.1)', () => {
         const options = {
             ...baseOptions,
             keyEncryptionDigest: 'sha256',
-            keyEncryptionMgf1: 'sha224',
+            keyEncryptionMgf1: 'sha3-256',
             encryptionAlgorithm: 'http://www.w3.org/2001/04/xmlenc#aes128-cbc'
         };
 
@@ -682,7 +721,7 @@ describe('XML Structure Validation Tests', () => {
         expect(encryptedXml).toContain('<xenc:EncryptedData');
         expect(encryptedXml).toContain('<ds:DigestMethod');
         expect(encryptedXml).toContain('http://www.w3.org/2001/04/xmlenc#sha256');
-        expect(encryptedXml).toContain('<MGF');
+        expect(encryptedXml).toContain('<xenc11:MGF');
         expect(encryptedXml).toContain('http://www.w3.org/2009/xmlenc11#mgf1sha256');
     });
 
@@ -701,7 +740,7 @@ describe('XML Structure Validation Tests', () => {
 
         // SHA-1 是默认值，不应包含 DigestMethod 和 MGF
         expect(encryptedXml).not.toContain('<ds:DigestMethod');
-        expect(encryptedXml).not.toContain('<MGF');
+        expect(encryptedXml).not.toContain('<xenc11:MGF');
     });
 
     it('should include X509Certificate in KeyInfo', async () => {
@@ -796,8 +835,107 @@ describe('Cross-Algorithm Compatibility Tests', () => {
 });
 
 // ============================================================================
+// RetrievalMethod / 外部 EncryptedKey 回归测试
+// ============================================================================
+
+describe('External EncryptedKey Regression Tests', () => {
+    it('should decrypt EncryptedAssertion that uses RetrievalMethod with non-default OAEP settings', async () => {
+        const options = {
+            rsa_pub: testKeys.publicKey,
+            pem: testKeys.certificate,
+            keyEncryptionAlgorithm: 'http://www.w3.org/2009/xmlenc11#rsa-oaep',
+            keyEncryptionDigest: 'sha512',
+            keyEncryptionMgf1: 'sha384',
+            encryptionAlgorithm: 'http://www.w3.org/2009/xmlenc11#aes256-gcm',
+            key: testKeys.privateKey
+        };
+
+        const inlineEncryptedXml = await runEncrypt(TEST_CONTENT, options);
+        const externalEncryptedXml = buildExternalEncryptedAssertion(inlineEncryptedXml);
+        const decryptedContent = await runDecrypt(externalEncryptedXml, options);
+
+        expect(decryptedContent).toBe(TEST_CONTENT);
+    });
+
+    it('should ignore unrelated outer Signature KeyInfo when decrypting wrapped SAML responses', async () => {
+        const options = {
+            rsa_pub: testKeys.publicKey,
+            pem: testKeys.certificate,
+            keyEncryptionAlgorithm: 'http://www.w3.org/2009/xmlenc11#rsa-oaep',
+            keyEncryptionDigest: 'sha256',
+            keyEncryptionMgf1: 'sha256',
+            encryptionAlgorithm: 'http://www.w3.org/2009/xmlenc11#aes128-gcm',
+            key: testKeys.privateKey
+        };
+
+        const inlineEncryptedXml = await runEncrypt(TEST_CONTENT_UNICODE, options);
+        const externalEncryptedXml = buildExternalEncryptedAssertion(inlineEncryptedXml);
+        const wrappedResponse = wrapEncryptedAssertionInResponse(externalEncryptedXml);
+        const decryptedContent = await runDecrypt(wrappedResponse, options);
+
+        expect(decryptedContent).toBe(TEST_CONTENT_UNICODE);
+    });
+});
+
+// ============================================================================
 // 辅助函数
 // ============================================================================
+
+function buildExternalEncryptedAssertion(encryptedXml) {
+    const doc = new DOMParser().parseFromString(encryptedXml, 'application/xml');
+    const encryptedData = xpath.select1("//*[local-name(.)='EncryptedData']", doc);
+
+    if (!encryptedData) {
+        throw new Error('Missing EncryptedData in test fixture');
+    }
+
+    const keyInfo = xpath.select1("./*[local-name(.)='KeyInfo']", encryptedData);
+    if (!keyInfo) {
+        throw new Error('Missing KeyInfo in encrypted payload');
+    }
+
+    const encryptedKey = xpath.select1("./*[local-name(.)='EncryptedKey']", keyInfo);
+    if (!encryptedKey) {
+        throw new Error('Missing inline EncryptedKey in encrypted payload');
+    }
+
+    const encryptedKeyId = encryptedKey.getAttribute('Id') || 'external-key';
+    if (!encryptedKey.getAttribute('Id')) {
+        encryptedKey.setAttribute('Id', encryptedKeyId);
+    }
+    const retrievalMethod = doc.createElementNS(
+        'http://www.w3.org/2000/09/xmldsig#',
+        'RetrievalMethod'
+    );
+    retrievalMethod.setAttribute('Type', 'http://www.w3.org/2001/04/xmlenc#EncryptedKey');
+    retrievalMethod.setAttribute('URI', `#${encryptedKeyId}`);
+
+    keyInfo.replaceChild(retrievalMethod, encryptedKey);
+
+    return [
+        '<saml:EncryptedAssertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">',
+        encryptedData.toString(),
+        encryptedKey.toString(),
+        '</saml:EncryptedAssertion>'
+    ].join('');
+}
+
+function wrapEncryptedAssertionInResponse(encryptedAssertionXml) {
+    return [
+        '<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"',
+        ' xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"',
+        ' xmlns:ds="http://www.w3.org/2000/09/xmldsig#">',
+        '<ds:Signature>',
+        '<ds:KeyInfo>',
+        '<ds:X509Data>',
+        '<ds:X509Certificate>UNRELATED_OUTER_SIGNATURE_CERT</ds:X509Certificate>',
+        '</ds:X509Data>',
+        '</ds:KeyInfo>',
+        '</ds:Signature>',
+        encryptedAssertionXml,
+        '</samlp:Response>'
+    ].join('');
+}
 
 /**
  * 执行加密并返回 Promise

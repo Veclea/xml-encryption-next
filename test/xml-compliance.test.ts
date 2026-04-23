@@ -36,6 +36,7 @@ function generateTestKeys() {
 
 const testKeys = generateTestKeys();
 const TEST_CONTENT = 'Test content for XML encryption compliance';
+const TEST_OAEP_PARAMS = '9lWu3Q==';
 
 // ============================================================================
 // XML 结构验证
@@ -238,6 +239,7 @@ describe('XML Encryption Compliance Tests', () => {
 
             expect(mgfElement).toBeDefined();
             expect(mgfElement.getAttribute('Algorithm')).toBe('http://www.w3.org/2009/xmlenc11#mgf1sha256');
+            expect(mgfElement.namespaceURI).toBe('http://www.w3.org/2009/xmlenc11#');
         });
 
         it('should omit DigestMethod and MGF when using SHA-1 defaults', async () => {
@@ -274,6 +276,27 @@ describe('XML Encryption Compliance Tests', () => {
             const algorithm = encryptionMethod.getAttribute('Algorithm');
 
             expect(algorithm).toBe('http://www.w3.org/2009/xmlenc11#aes256-gcm');
+        });
+
+        it('should include xenc:OAEPparams when provided', async () => {
+            const options = {
+                ...baseOptions,
+                keyEncryptionAlgorithm: 'http://www.w3.org/2009/xmlenc11#rsa-oaep',
+                keyEncryptionDigest: 'sha256',
+                keyEncryptionMgf1: 'sha224',
+                keyEncryptionOAEPParams: TEST_OAEP_PARAMS,
+                encryptionAlgorithm: 'http://www.w3.org/2009/xmlenc11#aes128-gcm'
+            };
+
+            const encryptedXml = await encrypt(TEST_CONTENT, options);
+            const doc = new DOMParser().parseFromString(encryptedXml);
+            const oaepParams = xpath.select("//*[local-name(.)='OAEPparams']", doc)[0];
+            const mgfElement = xpath.select("//*[local-name(.)='MGF']", doc)[0];
+
+            expect(oaepParams).toBeDefined();
+            expect(oaepParams.namespaceURI).toBe('http://www.w3.org/2001/04/xmlenc#');
+            expect(oaepParams.textContent).toBe(TEST_OAEP_PARAMS);
+            expect(mgfElement.getAttribute('Algorithm')).toBe('http://www.w3.org/2009/xmlenc11#mgf1sha224');
         });
     });
 
@@ -511,21 +534,21 @@ describe('XML Encryption Compliance Tests', () => {
             await expect(encrypt(TEST_CONTENT, options)).rejects.toThrow('AES-CBC encryption algorithm is not secure');
         });
 
-        it('should use secure defaults', async () => {
+        it('should use XML Encryption spec defaults when digest and MGF are omitted', async () => {
             const options = {
                 ...baseOptions,
                 keyEncryptionAlgorithm: 'http://www.w3.org/2009/xmlenc11#rsa-oaep',
                 encryptionAlgorithm: 'http://www.w3.org/2009/xmlenc11#aes128-gcm'
             };
 
-            // 默认应该使用 SHA-256
             const encrypted = await encrypt(TEST_CONTENT, options);
             const doc = new DOMParser().parseFromString(encrypted);
             const digestMethod = xpath.select("//*[local-name(.)='DigestMethod']", doc)[0];
+            const mgfElement = xpath.select("//*[local-name(.)='MGF']", doc)[0];
 
-            if (digestMethod) {
-                expect(digestMethod.getAttribute('Algorithm')).toBe('http://www.w3.org/2001/04/xmlenc#sha256');
-            }
+            expect(digestMethod).toBeUndefined();
+            expect(mgfElement).toBeUndefined();
+            await expect(decrypt(encrypted, options)).resolves.toBeDefined();
         });
     });
 });
@@ -552,6 +575,7 @@ describe('XML Encryption Compliance Report', () => {
                 'AES-GCM content encryption': '✅ Supported',
                 'DigestMethod (XML Enc 1.1)': '✅ Supported',
                 'MGF element (XML Enc 1.1)': '✅ Supported',
+                'OAEPparams element': '✅ Supported',
                 'RetrievalMethod': '✅ Supported (parsing)',
                 '3DES-CBC': '✅ Supported (deprecated)'
             },
